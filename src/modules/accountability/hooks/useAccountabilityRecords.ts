@@ -9,7 +9,7 @@ import {
   query,
   updateDoc
 } from "firebase/firestore";
-import { db, isFirebaseConfigured } from "../firebase";
+import { db, isFirebaseConfigured } from "../../../shared/firebase/firebase";
 import { mockRecords } from "../data/mockData";
 import { AccountabilityRecord } from "../types/accountability";
 

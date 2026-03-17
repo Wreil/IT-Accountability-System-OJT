@@ -1,11 +1,15 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
-import { EmployeeForm } from "./components/EmployeeForm";
-import { HeaderBar } from "./components/HeaderBar";
-import { PrintableForm } from "./components/PrintableForm";
-import { RecordsList } from "./components/RecordsList";
-import { useAccountabilityRecords } from "./hooks/useAccountabilityRecords";
-import { AccountabilityRecord } from "./types/accountability";
+import { EmployeeForm } from "./modules/accountability/components/EmployeeForm";
+import { PrintableForm } from "./modules/accountability/components/PrintableForm";
+import { RecordsList } from "./modules/accountability/components/RecordsList";
+import { useAccountabilityRecords } from "./modules/accountability/hooks/useAccountabilityRecords";
+import { AccountabilityRecord } from "./modules/accountability/types/accountability";
+import { ITAssetChart } from "./modules/asset-inventory/components/ITAssetChart";
+import { ITAssetInventory } from "./modules/asset-inventory/components/ITAssetInventory";
+import { LandingPage } from "./modules/navigation/components/LandingPage";
+import { SelectionPage } from "./modules/navigation/components/SelectionPage";
+import { HeaderBar } from "./shared/components/HeaderBar";
 
 const trimRecord = (record: AccountabilityRecord): AccountabilityRecord => {
   const next = { ...record };
@@ -18,11 +22,24 @@ const trimRecord = (record: AccountabilityRecord): AccountabilityRecord => {
   return next;
 };
 
+type ActiveView = "form" | "inventory" | "chart" | "records" | "printable";
+type ModuleKey =
+  | "it-accountability-form"
+  | "it-asset-inventory"
+  | "it-software-inventory"
+  | "ipad-inventory"
+  | "disposal"
+  | "returned-assets";
+
 function App() {
-  const { records, loading, error, useLocalMode, createRecord, updateRecord, removeRecord } =
+  const [showLanding, setShowLanding] = useState(true);
+  const [selectedModule, setSelectedModule] = useState<ModuleKey | null>(null);
+  const { records, loading, useLocalMode, createRecord, updateRecord, removeRecord, reload } =
     useAccountabilityRecords();
   const [editingRecord, setEditingRecord] = useState<AccountabilityRecord | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<AccountabilityRecord | null>(null);
+  const [activeView, setActiveView] = useState<ActiveView>("records");
+  const [pendingPrint, setPendingPrint] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -33,34 +50,22 @@ function App() {
       : "IT-Accountability"
   });
 
-  const recordsCountText = useMemo(() => `${records.length} record(s)`, [records.length]);
-  const monitoredAssets = useMemo(
-    () => records.filter((item) => item.monitorSerialNumber.trim().length > 0).length,
-    [records]
-  );
-  const pendingAcknowledgement = useMemo(
-    () =>
-      records.filter(
-        (item) => !item.phr.trim() || !item.amld.trim() || !item.it.trim() || !item.cato.trim()
-      ).length,
-    [records]
-  );
-
   const handleSubmit = async (record: AccountabilityRecord) => {
     const cleaned = trimRecord(record);
     if (editingRecord?.id) {
       await updateRecord(editingRecord.id, cleaned);
       setEditingRecord(null);
       setSelectedRecord((prev) => {
-        if (!prev || prev.id !== editingRecord.id) {
-          return prev;
-        }
+        if (!prev || prev.id !== editingRecord.id) return prev;
         return { ...cleaned, id: prev.id };
       });
+      setSelectedModule("it-accountability-form");
+      setActiveView("records");
       return;
     }
-
     await createRecord(cleaned);
+    setSelectedModule("it-accountability-form");
+    setActiveView("records");
   };
 
   const handleDelete = async (record: AccountabilityRecord) => {
@@ -68,112 +73,180 @@ function App() {
     const confirmed = window.confirm(`Delete record for ${record.empId} - ${record.lastName}?`);
     if (!confirmed) return;
     await removeRecord(record.id);
-    if (selectedRecord?.id === record.id) {
-      setSelectedRecord(null);
-    }
-    if (editingRecord?.id === record.id) {
-      setEditingRecord(null);
-    }
+    if (selectedRecord?.id === record.id) setSelectedRecord(null);
+    if (editingRecord?.id === record.id) setEditingRecord(null);
   };
 
   const handlePrintRecord = (record: AccountabilityRecord) => {
     setSelectedRecord(record);
-    setTimeout(() => {
-      void handlePrint();
-    }, 0);
+    setActiveView("printable");
+    setPendingPrint(true);
   };
+
+  useEffect(() => {
+    if (!pendingPrint || activeView !== "printable" || !selectedRecord) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void handlePrint();
+      setPendingPrint(false);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [pendingPrint, activeView, selectedRecord, handlePrint]);
+
+  const handleViewRecord = (record: AccountabilityRecord) => {
+    setSelectedRecord(record);
+    setActiveView("printable");
+  };
+
+  const handleEditRecord = (record: AccountabilityRecord) => {
+    setEditingRecord(record);
+    setActiveView("form");
+  };
+
+  const handleModuleSelect = (moduleKey: string) => {
+    const typed = moduleKey as ModuleKey;
+    setSelectedModule(typed);
+    if (typed === "it-accountability-form") {
+      setActiveView("form");
+      return;
+    }
+    if (typed === "it-asset-inventory") {
+      setActiveView("inventory");
+      return;
+    }
+    window.alert("This module will be available soon.");
+    setSelectedModule(null);
+  };
+
+  if (showLanding) {
+    return (
+      <LandingPage
+        onEnter={() => {
+          setShowLanding(false);
+        }}
+      />
+    );
+  }
+
+  if (!selectedModule) {
+    return <SelectionPage onSelect={handleModuleSelect} />;
+  }
+
+  const isAccountabilityModule = selectedModule === "it-accountability-form";
+  const isAssetInventoryModule = selectedModule === "it-asset-inventory";
+
+  const headerTitle = isAssetInventoryModule ? "IT Asset Inventory" : "IT Accountability Form";
 
   return (
     <div className="app-shell">
-      <HeaderBar localMode={useLocalMode} />
-      <main className="layout">
-        <aside className="sidebar-column">
-          <div className="sidebar-brand-row sidebar-divider">
-            <span className="sidebar-logo-icon">◷</span>
-            <p className="sidebar-brand">eAttend</p>
-          </div>
+      <HeaderBar localMode={useLocalMode} title={headerTitle} />
+      <div className="layout">
+        <aside className="sidebar">
+          <nav className="sidebar-nav">
+            {isAccountabilityModule && (
+              <>
+                <button
+                  type="button"
+                  className={`nav-btn${activeView === "form" ? " nav-btn--active" : ""}`}
+                  onClick={() => setActiveView("form")}
+                >
+                  <span className="nav-icon">✦</span>
+                  Create Record
+                </button>
+                <button
+                  type="button"
+                  className={`nav-btn${activeView === "records" ? " nav-btn--active" : ""}`}
+                  onClick={() => setActiveView("records")}
+                >
+                  <span className="nav-icon">☰</span>
+                  Records
+                </button>
+                <button
+                  type="button"
+                  className={`nav-btn${activeView === "printable" ? " nav-btn--active" : ""}`}
+                  onClick={() => setActiveView("printable")}
+                >
+                  <span className="nav-icon">⎙</span>
+                  Printable Form
+                </button>
+              </>
+            )}
 
-          <div className="sidebar-profile sidebar-divider">
-            <span className="sidebar-avatar">◉</span>
-            <div>
-              <p className="sidebar-name">Justine Meg Evangelista</p>
-              <p className="sidebar-role">EMPLOYEE</p>
-            </div>
-          </div>
-
-          <nav className="sidebar-menu">
-            <button type="button" className="nav-item nav-item-active">
-              <span className="nav-icon">◴</span>
-              <span>Dashboard</span>
-            </button>
-            <button type="button" className="nav-item">
-              <span className="nav-icon">◫</span>
-              <span>Attendance</span>
-            </button>
-            <button type="button" className="nav-item">
-              <span className="nav-icon">◧</span>
-              <span>Leave Requests</span>
-            </button>
-            <button type="button" className="nav-item">
-              <span className="nav-icon">◎</span>
-              <span>Profile</span>
-            </button>
+            {isAssetInventoryModule && (
+              <>
+                <button
+                  type="button"
+                  className={`nav-btn${activeView === "inventory" ? " nav-btn--active" : ""}`}
+                  onClick={() => setActiveView("inventory")}
+                >
+                  <span className="nav-icon">▦</span>
+                  Asset
+                </button>
+                <button
+                  type="button"
+                  className={`nav-btn${activeView === "chart" ? " nav-btn--active" : ""}`}
+                  onClick={() => setActiveView("chart")}
+                >
+                  <span className="nav-icon">◔</span>
+                  Chart
+                </button>
+              </>
+            )}
           </nav>
 
-          <div className="sidebar-footer-panel sidebar-divider-top">
-            <button type="button" className="logout-button">
-              <span className="logout-icon">↪</span>
-              <span>Logout</span>
+          <div className="sidebar-bottom">
+            <button
+              type="button"
+              className="nav-btn nav-btn-danger"
+              onClick={() => {
+                setSelectedModule(null);
+              }}
+            >
+              <span className="nav-icon">↩</span>
+              Back
             </button>
           </div>
         </aside>
-        <section className="content-grid">
-          <div className="right-column">
-            <section className="panel metrics-grid">
-              <article className="metric-card">
-                <p>Total Records</p>
-                <strong>{recordsCountText}</strong>
-              </article>
-              <article className="metric-card">
-                <p>Assets With Monitor</p>
-                <strong>{monitoredAssets}</strong>
-              </article>
-              <article className="metric-card">
-                <p>Pending Sign-off</p>
-                <strong>{pendingAcknowledgement}</strong>
-              </article>
-              <article className="metric-card">
-                <p>Mode</p>
-                <strong>{useLocalMode ? "Local" : "Firestore"}</strong>
-              </article>
-              {loading && <p>Loading records...</p>}
-              {error && <p className="warning-text">{error}</p>}
-            </section>
-          </div>
 
-          <div className="left-column">
+        <main className="main-content">
+          {isAccountabilityModule && activeView === "form" && (
             <EmployeeForm
               editingRecord={editingRecord}
               onSubmit={handleSubmit}
-              onCancelEdit={() => setEditingRecord(null)}
+              onCancelEdit={() => { setEditingRecord(null); setActiveView("records"); }}
             />
-          </div>
+          )}
 
-          <div className="right-column">
+          {isAssetInventoryModule && activeView === "inventory" && (
+            <ITAssetInventory
+              records={records}
+              loading={loading}
+              onRefresh={reload}
+            />
+          )}
+
+          {isAssetInventoryModule && activeView === "chart" && (
+            <ITAssetChart records={records} />
+          )}
+
+          {isAccountabilityModule && activeView === "records" && (
             <RecordsList
               records={records}
-              onEdit={(record) => setEditingRecord(record)}
+              onEdit={handleEditRecord}
               onDelete={handleDelete}
               onPrint={handlePrintRecord}
-              onView={(record) => setSelectedRecord(record)}
+              onView={handleViewRecord}
             />
-          </div>
+          )}
 
-          <div className="right-column">
+          {isAccountabilityModule && activeView === "printable" && (
             <PrintableForm record={selectedRecord} ref={printRef} />
-          </div>
-        </section>
-      </main>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

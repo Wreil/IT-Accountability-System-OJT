@@ -14,7 +14,6 @@ type SortKey = keyof AccountabilityRecord;
 export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: RecordsListProps) => {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
-  const [division, setDivision] = useState("");
   const [project, setProject] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [ascending, setAscending] = useState(false);
@@ -27,7 +26,6 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
 
     return {
       departments: getUnique("department"),
-      divisions: getUnique("division"),
       projects: getUnique("project")
     };
   }, [records]);
@@ -42,7 +40,6 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
         item.middleName,
         item.lastName,
         item.department,
-        item.division,
         item.project,
         item.hostname,
         item.serialNumber
@@ -52,10 +49,9 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
 
       const bySearch = !lowered || searchable.includes(lowered);
       const byDepartment = !department || item.department === department;
-      const byDivision = !division || item.division === division;
       const byProject = !project || item.project === project;
 
-      return bySearch && byDepartment && byDivision && byProject;
+      return bySearch && byDepartment && byProject;
     });
 
     return [...base].sort((a, b) => {
@@ -64,7 +60,7 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
       const compared = left.localeCompare(right);
       return ascending ? compared : -compared;
     });
-  }, [records, search, department, division, project, sortKey, ascending]);
+  }, [records, search, department, project, sortKey, ascending]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -94,15 +90,6 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
           ))}
         </select>
 
-        <select value={division} onChange={(e) => setDivision(e.target.value)}>
-          <option value="">All Divisions</option>
-          {options.divisions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-
         <select value={project} onChange={(e) => setProject(e.target.value)}>
           <option value="">All Projects</option>
           {options.projects.map((option) => (
@@ -120,7 +107,6 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
               <th><button type="button" onClick={() => toggleSort("empId")}>Emp ID</button></th>
               <th><button type="button" onClick={() => toggleSort("lastName")}>Name</button></th>
               <th><button type="button" onClick={() => toggleSort("department")}>Department</button></th>
-              <th><button type="button" onClick={() => toggleSort("division")}>Division</button></th>
               <th><button type="button" onClick={() => toggleSort("project")}>Project</button></th>
               <th><button type="button" onClick={() => toggleSort("updatedAt")}>Updated</button></th>
               <th>Actions</th>
@@ -132,7 +118,6 @@ export const RecordsList = ({ records, onEdit, onDelete, onPrint, onView }: Reco
                 <td>{record.empId}</td>
                 <td>{[record.firstName, record.middleName, record.lastName].filter(Boolean).join(" ")}</td>
                 <td>{record.department}</td>
-                <td>{record.division}</td>
                 <td>{record.project}</td>
                 <td>{record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "-"}</td>
                 <td className="row-actions">

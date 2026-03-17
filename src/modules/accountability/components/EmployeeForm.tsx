@@ -7,30 +7,41 @@ interface EmployeeFormProps {
   onCancelEdit: () => void;
 }
 
-const labels: Array<{ key: keyof AccountabilityRecord; label: string; type?: string }> = [
-  { key: "no", label: "No" },
-  { key: "empId", label: "Emp ID" },
-  { key: "firstName", label: "Firstname" },
-  { key: "middleName", label: "Middle Name" },
+type FieldDef =
+  | { key: keyof AccountabilityRecord; label: string; type?: string }
+  | { key: keyof AccountabilityRecord; label: string; type: "select"; options: string[] };
+
+const labels: FieldDef[] = [
+  { key: "no", label: "No." },
+  { key: "empId", label: "Employee ID" },
   { key: "lastName", label: "Last Name" },
-  { key: "email", label: "Email", type: "email" },
+  { key: "firstName", label: "First Name" },
+  { key: "middleName", label: "Middle Name" },
+  { key: "email", label: "Email (Office 365)", type: "email" },
   { key: "position", label: "Position" },
   { key: "group", label: "Group" },
   { key: "department", label: "Department" },
-  { key: "division", label: "Division" },
+  { key: "opCen", label: "OpCen" },
+  { key: "employmentStatus", label: "Employment Status" },
   { key: "project", label: "Project" },
   { key: "costCenter", label: "Cost Center" },
-  { key: "projectLocation", label: "Project Location" },
+  { key: "projectLocation", label: "Location of Asset (Project/Address)" },
+  { key: "tarf", label: "TARF Reference # (if applicable)" },
+  { key: "deviceType", label: "Device Type", type: "select", options: ["", "Desktop", "Laptop", "Tablet", "Mobile Phone", "Others"] },
+  { key: "deviceDescription", label: "Description / Device Model" },
   { key: "hostname", label: "Hostname" },
   { key: "serialNumber", label: "Serial Number" },
-  { key: "deviceAssetNumber", label: "Asset Number (device)" },
+  { key: "deviceCondition", label: "Device Condition", type: "select", options: ["", "New", "Old"] },
+  { key: "deviceAssetNumber", label: "Asset Number (Device)" },
   { key: "monitorModel", label: "Monitor Model" },
   { key: "monitorSerialNumber", label: "Monitor Serial Number" },
-  { key: "monitorAssetNumber", label: "Asset Number (monitor)" },
-  { key: "phr", label: "PHR" },
-  { key: "amld", label: "AMLD" },
-  { key: "it", label: "IT" },
-  { key: "cato", label: "CATO" }
+  { key: "monitorAssetNumber", label: "Asset Number (Monitor)" },
+  { key: "softwareName", label: "Software Application Name" },
+  { key: "softwareLicense", label: "Software License / Reference #" },
+  { key: "phr", label: "HR/PHR Representative" },
+  { key: "amld", label: "AMLD Representative" },
+  { key: "it", label: "IT Representative" },
+  { key: "cato", label: "CATO" },
 ];
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -97,25 +108,43 @@ export const EmployeeForm = ({ editingRecord, onSubmit, onCancelEdit }: Employee
       )}
 
       <form onSubmit={handleSubmit} className="form-grid">
-        {labels.map(({ key, label, type }) => {
+        {labels.map((fieldDef) => {
+          const { key, label, type } = fieldDef;
           const required = REQUIRED_FIELDS.includes(key);
+          const isSelect = type === "select";
+          const options = isSelect ? (fieldDef as { options: string[] }).options : [];
           return (
             <label key={key} className="field">
               <span>
                 {label}
                 {required ? " *" : ""}
               </span>
-              <input
-                type={type ?? "text"}
-                value={String(form[key] ?? "")}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    [key]: e.target.value
-                  }))
-                }
-                placeholder={label}
-              />
+              {isSelect ? (
+                <select
+                  value={String(form[key] ?? "")}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, [key]: e.target.value }))
+                  }
+                >
+                  {options.map((o) => (
+                    <option key={o} value={o}>
+                      {o || `Select ${label}`}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={type ?? "text"}
+                  value={String(form[key] ?? "")}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      [key]: e.target.value
+                    }))
+                  }
+                  placeholder={label}
+                />
+              )}
             </label>
           );
         })}
