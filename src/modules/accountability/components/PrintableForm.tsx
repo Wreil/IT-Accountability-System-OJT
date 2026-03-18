@@ -106,7 +106,7 @@ export const PrintableForm = forwardRef<HTMLDivElement, PrintableFormProps>(({ r
               />
             </div>
             <div className="print-header-copy">
-              <h1>IT ASSET ACCOUNTABILITY FORM</h1>
+              <h1>IT Assets Accountability Form</h1>
               <p>MAKATI DEVELOPMENT CORPORATION — Information Technology Division</p>
             </div>
           </div>
@@ -426,7 +426,7 @@ export const PrintableForm = forwardRef<HTMLDivElement, PrintableFormProps>(({ r
                   />
                 </div>
                 <div className="print-header-copy">
-                  <h1>IT ASSET ACCOUNTABILITY FORM - ATTACHMENTS</h1>
+                  <h1>IT Assets Accountability Form - ATTACHMENTS</h1>
                   <p>MAKATI DEVELOPMENT CORPORATION — Information Technology Division</p>
                 </div>
               </div>

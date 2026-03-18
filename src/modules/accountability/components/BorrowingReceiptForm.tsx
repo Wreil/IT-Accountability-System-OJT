@@ -60,7 +60,7 @@ export const BorrowingReceiptForm = ({
   if (!record?.id) {
     return (
       <section className="panel">
-        <h2>Borrowing and Receipt Form</h2>
+        <h2>Borrowing Receipt Form</h2>
         <p className="helper-text">
           Select a record in Records first, then click Borrowing to fill this section.
         </p>
@@ -70,7 +70,7 @@ export const BorrowingReceiptForm = ({
 
   return (
     <section className="panel">
-      <h2>Borrowing and Receipt Form</h2>
+      <h2>Borrowing Receipt Form</h2>
       <p className="helper-text">
         Filling for <strong>{record.empId}</strong> - <strong>{borrowerName}</strong>
       </p>

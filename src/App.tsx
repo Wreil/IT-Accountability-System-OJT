@@ -309,7 +309,8 @@ function App() {
 
   const handleBorrowingRecord = (record: AccountabilityRecord) => {
     setSelectedRecord(record);
-    setActiveView("borrowing-form");
+    const hasSavedBorrowing = Boolean(record.id && borrowingReceiptByRecordId[record.id]);
+    setActiveView(hasSavedBorrowing ? "borrowing-printable" : "borrowing-form");
   };
 
   const handleSaveBorrowingForm = (recordId: string, data: BorrowingReceiptData) => {
@@ -473,14 +474,29 @@ function App() {
                   type="button"
                   className={`nav-btn${activeView === "borrowing-form" || activeView === "borrowing-printable" ? " nav-btn--active" : ""}`}
                   onClick={() => {
-                    if (!selectedRecord && records.length > 0) {
-                      setSelectedRecord(records[0]);
+                    const targetRecord = selectedRecord ?? records[0] ?? null;
+                    if (!targetRecord) {
+                      setActiveView("borrowing-form");
+                      return;
                     }
-                    setActiveView("borrowing-form");
+
+                    setSelectedRecord(targetRecord);
+                    const hasSavedBorrowing = Boolean(
+                      targetRecord.id && borrowingReceiptByRecordId[targetRecord.id]
+                    );
+                    setActiveView(hasSavedBorrowing ? "borrowing-printable" : "borrowing-form");
                   }}
                 >
-                  <span className="nav-icon">🧾</span>
-                  Borrowing and Receipt
+                  <span className="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M7 4h8l4 4v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                      <path d="M15 4v4h4" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                      <path d="M9 12h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <path d="M9 15h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <path d="M9 9h3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  Borrowing Receipt
                 </button>
               </>
             )}
@@ -696,6 +712,7 @@ function App() {
           {isAccountabilityModule && activeView === "records" && (
             <RecordsList
               records={records}
+              borrowingReceiptByRecordId={borrowingReceiptByRecordId}
               onEdit={handleEditRecord}
               onDelete={handleDelete}
               onPrint={handlePrintRecord}

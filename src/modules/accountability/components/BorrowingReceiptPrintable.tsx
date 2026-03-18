@@ -16,9 +16,9 @@ export const BorrowingReceiptPrintable = forwardRef<
   if (!record) {
     return (
       <section className="panel">
-        <h2>Borrowing and Receipt Printable</h2>
+        <h2>Borrowing Receipt Printable</h2>
         <p className="helper-text">
-          Select a record first, then open Borrowing and Receipt to generate the A4 printable page.
+          Select a record first, then open Borrowing Receipt to generate the A4 printable page.
         </p>
       </section>
     );
@@ -30,7 +30,7 @@ export const BorrowingReceiptPrintable = forwardRef<
 
   return (
     <section className="panel print-shell">
-      <h2 className="no-print">Borrowing and Receipt Printable Preview</h2>
+      <h2 className="no-print">Borrowing Receipt Printable Preview</h2>
 
       <div className="print-form print-form--a4 print-form--compact" ref={ref}>
         <header className="print-header">
@@ -46,7 +46,7 @@ export const BorrowingReceiptPrintable = forwardRef<
               />
             </div>
             <div className="print-header-copy">
-              <h1>IT ASSET BORROWING AND RECEIPT FORM</h1>
+              <h1>IT ASSET BORROWING RECEIPT FORM</h1>
               <p>MAKATI DEVELOPMENT CORPORATION - Information Technology Division</p>
             </div>
           </div>
